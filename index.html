@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fold</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%276%27 fill=%27%230e1b1f%27/%3E%3Cpath d=%27M8 24V8h12v3h-9v4h8v3h-8v6z%27 fill=%27%23e8c27a%27/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #1d1a17; --ink2: rgba(29,26,23,0.62); --accent: #ff5424; }
+  html, body { margin: 0; height: 100%; background: #6e4a32; overflow: hidden; font-family: Inter, system-ui, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #ui button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .glass { position: absolute; pointer-events: auto; }
+  .brand { top: 18px; left: 18px; height: 44px; padding: 0 18px; display: flex; align-items: center; gap: 10px; }
+  .brand .word { font-family: Fraunces, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; }
+  .brand .sub { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink2); padding-top: 2px; }
+  .round { top: 18px; right: 18px; width: 44px; height: 44px; display: grid; place-items: center; }
+  .bagbtn .count { position: absolute; top: 5px; right: 4px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; display: grid; place-items: center; transform: scale(0); transition: transform .3s cubic-bezier(.3,1.6,.5,1); }
+  .bagbtn .count.show { transform: scale(1); }
+  .bagbtn.bump { animation: bump .45s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .dock { left: 50%; bottom: 18px; transform: translateX(-50%); height: 60px; padding: 0 8px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .dock .icon { width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; transition: background .2s; }
+  .dock .icon:hover, .sheet .icon:hover { background: rgba(255,255,255,0.35); }
+  .dock .icon.on { background: rgba(29,26,23,0.12); }
+  .dots { display: flex; gap: 6px; padding: 0 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 4px; background: rgba(29,26,23,0.22) !important; transition: width .3s, background .3s; }
+  .dot.on { width: 18px; background: var(--ink) !important; }
+  .info { display: flex; flex-direction: column; padding: 0 10px 0 8px; min-width: 170px; }
+  .info b { font-family: Fraunces, serif; font-weight: 600; font-size: 16px; line-height: 1.15; }
+  .info span { font-size: 11.5px; color: var(--ink2); }
+  .cta { height: 40px; padding: 0 16px !important; border-radius: 20px; background: var(--ink) !important; color: #fff8ef !important; font-weight: 500 !important; font-size: 13px !important; transition: transform .15s, background .2s; }
+  .cta:hover { background: #000 !important; }
+  .cta:active { transform: scale(0.97); }
+  .cta:disabled { opacity: 0.35; cursor: default; }
+  .hero { position: absolute; left: 34px; top: 92px; max-width: 360px; opacity: 0; transform: translateY(8px); transition: opacity .6s, transform .6s; }
+  .hero.show { opacity: 1; transform: none; }
+  .hero h1 { font-family: Fraunces, serif; font-weight: 500; font-size: 48px; line-height: 0.98; letter-spacing: -0.02em; margin: 0 0 12px; color: #fff8ef; text-shadow: 0 2px 18px rgba(60,30,10,0.35); }
+  .hero p { font-size: 14px; line-height: 1.5; color: rgba(255,248,239,0.88); margin: 0; text-shadow: 0 1px 10px rgba(60,30,10,0.4); }
+  .sheet { top: 74px; right: 18px; width: 320px; padding: 16px 16px 14px; opacity: 0; transform: translateX(24px); pointer-events: none; transition: opacity .35s, transform .45s cubic-bezier(.2,.9,.2,1); }
+  .sheet.open { opacity: 1; transform: none; pointer-events: auto; }
+  .sheet header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .sheet header b { font-family: Fraunces, serif; font-weight: 600; font-size: 18px; }
+  .sheet .icon { width: 30px; height: 30px; border-radius: 15px; display: grid; place-items: center; }
+  .sheet ul { list-style: none; margin: 0; padding: 0; }
+  .sheet li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid rgba(29,26,23,0.1); font-size: 13px; }
+  .sheet li:first-child { border-top: 0; }
+  .sheet li.empty, .sheet li.done { display: block; color: var(--ink2); line-height: 1.5; }
+  .sheet li.done b { display: block; color: var(--ink); font-family: Fraunces, serif; font-size: 16px; margin-bottom: 4px; }
+  .qty { display: inline-flex; align-items: center; gap: 8px; }
+  .qty button { width: 22px; height: 22px; border-radius: 11px; background: rgba(29,26,23,0.08) !important; font-size: 13px !important; line-height: 1; }
+  .total { font-size: 13px; font-weight: 600; margin: 8px 0 12px; }
+  .cta.wide { width: 100%; }
+  .fine { font-size: 11px; color: var(--ink2); margin: 10px 0 0; text-align: center; }
+
+  .hint { left: 18px; bottom: 18px; height: 60px; padding: 0 18px 0 14px; display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(6px); transition: opacity .6s, transform .6s; pointer-events: none; }
+  .hint.show { opacity: 1; transform: none; }
+  .hint .ico { width: 32px; height: 32px; border-radius: 16px; display: grid; place-items: center; background: rgba(29,26,23,0.08); }
+  .hint .txt { display: flex; flex-direction: column; }
+  .hint b { font-family: Fraunces, serif; font-weight: 600; font-size: 14px; line-height: 1.15; }
+  .hint small { font-size: 11px; color: var(--ink2); }
+  .hint .mouse .wheel { animation: wheel 1.6s cubic-bezier(.5,0,.5,1) infinite; }
+  @keyframes wheel { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateY(6px); opacity: 0; } 100% { transform: translateY(6px); opacity: 0; } }
+  .hint .swipe .tip { animation: tip 1.8s cubic-bezier(.4,0,.3,1) infinite; }
+  .hint .swipe .trail { animation: trail 1.8s cubic-bezier(.4,0,.3,1) infinite; }
+  @keyframes tip { 0% { transform: translateX(0); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateX(-13px); opacity: 1; } 100% { transform: translateX(-13px); opacity: 0; } }
+  @keyframes trail { 0%, 15% { stroke-dashoffset: 0; opacity: 0.2; } 70% { opacity: 0.9; } 100% { stroke-dashoffset: -10; opacity: 0; } }
+  .copy { position: absolute; right: 24px; bottom: 38px; font-size: 11px; letter-spacing: 0.04em; color: rgba(255,248,239,0.82); text-shadow: 0 1px 6px rgba(50,25,10,0.45); pointer-events: none; }
+  @media (max-width: 1080px) { .hint small { display: none; } .hint { padding: 0 14px 0 12px; } }
+  @media (max-width: 900px) and (min-width: 721px) { .hint { bottom: 90px; height: 48px; } .copy { bottom: 96px; } }
+  @media (max-width: 720px) {
+    .brand .sub { display: none; }
+    .dock { left: 12px; right: 12px; transform: none; justify-content: space-between; }
+    .info { min-width: 0; flex: 1; overflow: hidden; }
+    .dots { display: none; }
+    #look { display: none !important; }
+    .info span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .info b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+    .cta { padding: 0 13px !important; }
+    .hero { left: 20px; top: 80px; } .hero h1 { font-size: 34px; }
+    .sheet { left: 12px; right: 12px; width: auto; top: auto; bottom: 90px; }
+    .hint { left: 12px; bottom: 88px; height: 44px; padding: 0 14px 0 8px; gap: 8px; }
+    .hint .ico { width: 28px; height: 28px; }
+    .hint b { font-size: 13px; }
+    .copy { right: 16px; bottom: 100px; font-size: 10px; }
+  }
+  #loader { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #8a5d3e, #5e3c27 70%); color: #fff3e2; font: 500 13px Inter, sans-serif; letter-spacing: 0.18em; text-transform: uppercase; transition: opacity .8s; z-index: 5; }
+  #loader span::after { content: ''; display: block; height: 2px; margin-top: 10px; background: linear-gradient(90deg, transparent, #ffd93b, transparent); animation: sweep 1.4s ease-in-out infinite; }
+  @keyframes sweep { 0% { transform: scaleX(0.1); opacity: 0.3; } 50% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(0.1); opacity: 0.3; } }
+  body.ready #loader { opacity: 0; pointer-events: none; }
+</style>
+  <script type="module" crossorigin src="./assets/index-BnOP_ai1.js"></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui"></div>
+<div id="loader"><span>Unfolding</span></div>
+</body>
+</html>
